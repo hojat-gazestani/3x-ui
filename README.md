@@ -12,18 +12,95 @@
 
 > **Disclaimer:** This project is only for personal learning and communication, please do not use it for illegal purposes, please do not use it in a production environment
 
-**If this project is helpful to you, you may wish to give it a**:star2:
+## Certificate
+```sh
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
 
-<p align="left">
-  <a href="https://buymeacoffee.com/mhsanaei" target="_blank">
-    <img src="./media/buymeacoffe.png" alt="Image">
-  </a>
-</p>
+sudo certbot certonly --standalone -d domain.com
+# Certificate is saved at: /etc/letsencrypt/live/domain.com/fullchain.pem
+# Key is saved at:         /etc/letsencrypt/live/domain.com/privkey.pem
+sudo certbot renew --dry-run
+```
 
-- USDT (TRC20): `TXncxkvhkDWGts487Pjqq1qT9JmwRUz8CC`
-- MATIC (polygon): `0x41C9548675D044c6Bfb425786C765bc37427256A`
-- LTC (Litecoin): `ltc1q2ach7x6d2zq0n4l0t4zl7d7xe2s6fs7a3vspwv`
+## Docker compose file
+So the final version of our docker-compose.yml will look something like this:
 
+```sh
+---
+version: "3"
+
+services:
+3x-ui:
+    image: ghcr.io/mhsanaei/3x-ui:latest
+    container_name: 3x-ui
+    hostname: domain.com
+    volumes:
+    - $PWD/db/:/etc/x-ui/
+    - /etc/letsencrypt/:/etc/letsencrypt/:rw
+    environment:
+    XRAY_VMESS_AEAD_FORCED: "false"
+    tty: true
+    network_mode: host
+    restart: unless-stopped
+```
+
+```sh
+docker compose up -d
+```
+
+After that you will be able to login to your panel with default credentials (admin/admin) on
+
+> http://domain.com:2053/
+
+Navigate to `Panel Settings` and under the `General` tab we will add our SSL certificate paths:
+
+```sh
+publich key path: /etc/letsencrypt/live/domain.com/fullchain.pem
+private key path: /etc/letsencrypt/live/domain.com/privkey.pem
+```
+<p align="center"><a href="#"><img src="./media/3x-ui-cert-paths.png" alt="Image"></a></p>
+
+Press `Save` but do not restart the panel just yet. Instead head to `Authentication` and change your password (and username). Now you can save and restart the panel after which make sure to login using `https://domain.com:2053`.
+
+## Setting up a tunnel
+
+To setup a tunnel, head to `Inbounds` and click on `Add Inbound` button.
+
+Do not yet touch the `Client` configuration, we will deal with it in the next step.
+
+In the `Remark` field it is good to give the tunnel an appropriate name.
+
+Choose a `Port` number. It is good idea to use some common web port, such as https `443`. In my case it is already in use so I set my port to `8080`.
+
+For `Security` you should chose `REALITY`.
+
+As `uTLS` you can chose any browser you like, in my case I use firefox.
+
+In the `Dest` and `SNI` fields we will add the URLs that the traffic will pretend to be destining to.
+
+Finally in the bottom click on `Get New Cert` button.
+
+For all the other options you should use the defaults.
+
+<p align="center"><a href="#"><img src="./media/vless-add-inbound.png" alt="Image"></a></p>
+
+
+## Setting up users
+
+Now you can `click` open the Client section. You can see an auto-generated client. You can modify an `Email` field if you want or live it as is.
+
+There is no need to modify additional fields if you do not want to limit the traffic quota etc for the user.
+
+Now you can press `Create` to create your client.
+
+If you want to add additional users, you can do so by pressing the 3 dots next to the tunnel name and selecting `Add Client` option from the list:
+
+<p align="center"><a href="#"><img src="./media/vless-add-client.png" alt="Image"></a></p>
+
+```sh
+sudo ufw allow 8080/tcp
+```
 ## Install & Upgrade
 
 ```
